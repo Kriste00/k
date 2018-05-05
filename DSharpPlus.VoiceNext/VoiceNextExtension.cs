@@ -55,8 +55,9 @@ namespace DSharpPlus.VoiceNext
         /// Create a VoiceNext connection for the specified channel.
         /// </summary>
         /// <param name="channel">Channel to connect to.</param>
+        /// <param name="disconnect">True to disconnect before connecting to a new channel.</param>
         /// <returns>VoiceNext connection for this channel.</returns>
-        public async Task<VoiceNextConnection> ConnectAsync(DiscordChannel channel)
+        public async Task<VoiceNextConnection> ConnectAsync(DiscordChannel channel, bool disconnect)
         {
             if (channel.Type != ChannelType.Voice)
                 throw new ArgumentException(nameof(channel), "Invalid channel specified; needs to be voice channel");
@@ -66,7 +67,13 @@ namespace DSharpPlus.VoiceNext
 
             var gld = channel.Guild;
             if (ActiveConnections.ContainsKey(gld.Id))
-                throw new InvalidOperationException("This guild already has a voice connection");
+            {
+                var active = ActiveConnections[gld.Id];
+                if (active.Channel == channel || !disconnect)
+                    throw new InvalidOperationException("This guild already has a voice connection");
+                else
+                    active.Disconnect();
+            }
 
             var vstut = new TaskCompletionSource<VoiceStateUpdateEventArgs>();
             var vsrut = new TaskCompletionSource<VoiceServerUpdateEventArgs>();
